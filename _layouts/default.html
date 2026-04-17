@@ -12,31 +12,6 @@
     <header>
         <a href="{{ '/' | relative_url }}" class="logo">phat nguyen</a>
 
-        <div class="header-right">
-            <nav id="main-nav">
-                <a href="{{ '/' | relative_url }}">home</a>
-                <a href="{{ '/blog/' | relative_url }}">blog</a>
-                <a href="{{ '/about.html' | relative_url }}">about</a>
-            </nav>
-
-            <button id="theme-toggle" type="button" aria-label="Toggle dark mode">
-                <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-                <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-                    <circle cx="12" cy="12" r="5"></circle>
-                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                    <line x1="19.76" y1="19.76" x2="21.17" y2="21.17"></line>
-                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                    <line x1="4.22" y1="19.76" x2="5.64" y2="21.17"></line>
-                    <line x1="19.76" y1="4.22" x2="21.17" y2="5.64"></line>
-                </svg>
-            </button>
-        </div>
-
         <div class="search-container">
             <div class="search-input-wrapper">
                 <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -47,6 +22,26 @@
             </div>
             <div id="results-container"></div>
         </div>
+
+        <nav id="main-nav">
+            <a href="{{ '/' | relative_url }}">home</a>
+            <a href="{{ '/blog/' | relative_url }}">blog</a>
+            <a href="{{ '/about.html' | relative_url }}">about</a>
+        </nav>
+
+        <button id="theme-toggle" type="button" aria-label="Toggle dark mode">
+            <svg class="theme-toggle-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3.4"></circle>
+                <path d="M12 2.6v2.2"></path>
+                <path d="M12 19.2v2.2"></path>
+                <path d="M2.6 12h2.2"></path>
+                <path d="M19.2 12h2.2"></path>
+                <path d="M5.35 5.35l1.55 1.55"></path>
+                <path d="M17.1 17.1l1.55 1.55"></path>
+                <path d="M5.35 18.65l1.55-1.55"></path>
+                <path d="M17.1 6.9l1.55-1.55"></path>
+            </svg>
+        </button>
     </header>
 
     <main>
@@ -69,8 +64,6 @@
         const themeToggleBtn = document.getElementById('theme-toggle');
         const bodyElement = document.body;
         const themeOverlay = document.querySelector('.theme-transition-overlay');
-        const moonIcon = document.querySelector('.moon-icon');
-        const sunIcon = document.querySelector('.sun-icon');
         const backToTopBtn = document.getElementById('back-to-top');
         const searchInput = document.getElementById('search-input');
         const resultsContainer = document.getElementById('results-container');
@@ -86,11 +79,6 @@
             dateElement.textContent = new Date().toLocaleDateString('vi-VN');
         }
 
-        function syncThemeIcons(isDark) {
-            moonIcon.hidden = isDark;
-            sunIcon.hidden = !isDark;
-        }
-
         function clearThemeSweepClasses() {
             bodyElement.classList.remove('theme-transitioning', 'theme-sweep-dark', 'theme-sweep-light');
         }
@@ -98,7 +86,6 @@
         const currentTheme = localStorage.getItem('theme');
         const useDarkTheme = currentTheme === 'dark';
         bodyElement.classList.toggle('dark-mode', useDarkTheme);
-        syncThemeIcons(useDarkTheme);
 
         if (themeOverlay) {
             themeOverlay.addEventListener('animationend', clearThemeSweepClasses);
@@ -110,7 +97,6 @@
             const nextIsDark = !bodyElement.classList.contains('dark-mode');
             bodyElement.classList.toggle('dark-mode', nextIsDark);
             localStorage.setItem('theme', nextIsDark ? 'dark' : 'light');
-            syncThemeIcons(nextIsDark);
 
             if (reduceMotion || !themeOverlay) {
                 clearThemeSweepClasses();
