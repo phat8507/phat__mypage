@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="{{ '/style.css' | relative_url }}">
 </head>
 <body>
+    <div class="theme-transition-overlay" aria-hidden="true"></div>
+
     <header>
         <a href="{{ '/' | relative_url }}" class="logo">phat nguyen</a>
 
@@ -66,6 +68,7 @@
         const dateElement = document.getElementById('current-date');
         const themeToggleBtn = document.getElementById('theme-toggle');
         const bodyElement = document.body;
+        const themeOverlay = document.querySelector('.theme-transition-overlay');
         const moonIcon = document.querySelector('.moon-icon');
         const sunIcon = document.querySelector('.sun-icon');
         const backToTopBtn = document.getElementById('back-to-top');
@@ -76,6 +79,7 @@
         let lastKnownScroll = 0;
         let isTicking = false;
         let searchReady = false;
+        let themeAnimating = false;
 
         if (dateElement) {
             dateElement.textContent = new Date().toLocaleDateString('vi-VN');
@@ -86,15 +90,40 @@
             sunIcon.hidden = !isDark;
         }
 
+        function clearThemeSweepClasses() {
+            bodyElement.classList.remove('theme-transitioning', 'theme-sweep-dark', 'theme-sweep-light');
+        }
+
         const currentTheme = localStorage.getItem('theme');
         const useDarkTheme = currentTheme === 'dark';
         bodyElement.classList.toggle('dark-mode', useDarkTheme);
         syncThemeIcons(useDarkTheme);
 
+        if (themeOverlay) {
+            themeOverlay.addEventListener('animationend', clearThemeSweepClasses);
+        }
+
         themeToggleBtn.addEventListener('click', () => {
-            const isDark = bodyElement.classList.toggle('dark-mode');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            syncThemeIcons(isDark);
+            if (themeAnimating) return;
+
+            const nextIsDark = !bodyElement.classList.contains('dark-mode');
+            bodyElement.classList.toggle('dark-mode', nextIsDark);
+            localStorage.setItem('theme', nextIsDark ? 'dark' : 'light');
+            syncThemeIcons(nextIsDark);
+
+            if (reduceMotion || !themeOverlay) {
+                clearThemeSweepClasses();
+                return;
+            }
+
+            themeAnimating = true;
+            clearThemeSweepClasses();
+            void themeOverlay.offsetWidth;
+            bodyElement.classList.add('theme-transitioning', nextIsDark ? 'theme-sweep-dark' : 'theme-sweep-light');
+
+            window.setTimeout(() => {
+                themeAnimating = false;
+            }, 760);
         });
 
         function updateBackToTop() {
