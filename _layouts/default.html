@@ -75,6 +75,7 @@
         const searchInput = document.getElementById('search-input');
         const resultsContainer = document.getElementById('results-container');
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const THEME_FADE_DURATION = 2500;
         let posts = [];
         let lastKnownScroll = 0;
         let isTicking = false;
@@ -123,7 +124,7 @@
 
             window.setTimeout(() => {
                 themeAnimating = false;
-            }, 760);
+            }, THEME_FADE_DURATION + 120);
         });
 
         function updateBackToTop() {
