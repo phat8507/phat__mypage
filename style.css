@@ -26,6 +26,8 @@
     --transition-fast: 180ms var(--ease-standard);
     --transition-medium: 280ms var(--ease-standard);
     --transition-slow: 420ms var(--ease-soft);
+    --theme-overlay-light: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 247, 239, 0.88) 48%, rgba(235, 238, 225, 0.18));
+    --theme-overlay-dark: linear-gradient(180deg, rgba(26, 32, 42, 0.96), rgba(13, 16, 22, 0.9) 52%, rgba(13, 16, 22, 0.16));
 }
 
 body.dark-mode {
@@ -86,6 +88,43 @@ body::after {
         radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.55), transparent 22%),
         radial-gradient(circle at 85% 16%, rgba(169, 189, 225, 0.18), transparent 24%),
         radial-gradient(circle at 50% 100%, rgba(245, 203, 160, 0.16), transparent 28%);
+}
+
+.theme-transition-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5000;
+    opacity: 0;
+}
+
+.theme-transition-overlay::before,
+.theme-transition-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+}
+
+.theme-transition-overlay::before {
+    background: var(--theme-overlay-light);
+}
+
+.theme-transition-overlay::after {
+    background: var(--theme-overlay-dark);
+}
+
+body.theme-transitioning {
+    overflow: hidden;
+}
+
+body.theme-transitioning .theme-transition-overlay {
+    opacity: 1;
+}
+
+body.theme-sweep-light .theme-transition-overlay::before,
+body.theme-sweep-dark .theme-transition-overlay::after {
+    animation: themeFadeDown 720ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 img {
@@ -982,6 +1021,12 @@ footer {
         scroll-behavior: auto !important;
     }
 
+    .theme-transition-overlay,
+    .theme-transition-overlay::before,
+    .theme-transition-overlay::after {
+        display: none !important;
+    }
+
     .blog-card:hover,
     .hero-glass-box:hover,
     .cta-button:hover,
@@ -989,5 +1034,24 @@ footer {
     #back-to-top:hover,
     .back-link:hover {
         transform: none !important;
+    }
+}
+
+@keyframes themeFadeDown {
+    0% {
+        opacity: 0;
+        clip-path: inset(0 0 100% 0 round 0);
+    }
+    20% {
+        opacity: 1;
+        clip-path: inset(0 0 60% 0 round 0);
+    }
+    65% {
+        opacity: 0.94;
+        clip-path: inset(0 0 0 0 round 0);
+    }
+    100% {
+        opacity: 0;
+        clip-path: inset(0 0 0 0 round 0);
     }
 }
