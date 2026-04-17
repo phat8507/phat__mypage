@@ -11,17 +11,6 @@
         <a href="{{ '/' | relative_url }}" class="logo">phat nguyen</a>
 
         <div class="header-right">
-            <div class="search-container">
-                <div class="search-input-wrapper">
-                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="search-input" placeholder="Search..." aria-label="Search posts">
-                </div>
-                <div id="results-container"></div>
-            </div>
-
             <nav id="main-nav">
                 <a href="{{ '/' | relative_url }}">home</a>
                 <a href="{{ '/blog/' | relative_url }}">blog</a>
@@ -44,14 +33,17 @@
                     <line x1="19.76" y1="4.22" x2="21.17" y2="5.64"></line>
                 </svg>
             </button>
+        </div>
 
-            <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Open menu" aria-controls="main-nav" aria-expanded="false">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M3 12H21" stroke-linecap="round"></path>
-                    <path d="M3 6H21" stroke-linecap="round"></path>
-                    <path d="M3 18H21" stroke-linecap="round"></path>
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-            </button>
+                <input type="text" id="search-input" placeholder="Search posts..." aria-label="Search posts">
+            </div>
+            <div id="results-container"></div>
         </div>
     </header>
 
@@ -76,9 +68,6 @@
         const bodyElement = document.body;
         const moonIcon = document.querySelector('.moon-icon');
         const sunIcon = document.querySelector('.sun-icon');
-        const menuToggleBtn = document.getElementById('menu-toggle');
-        const mainNav = document.getElementById('main-nav');
-        const navLinks = mainNav ? Array.from(mainNav.querySelectorAll('a')) : [];
         const backToTopBtn = document.getElementById('back-to-top');
         const searchInput = document.getElementById('search-input');
         const resultsContainer = document.getElementById('results-container');
@@ -86,6 +75,7 @@
         let posts = [];
         let lastKnownScroll = 0;
         let isTicking = false;
+        let searchReady = false;
 
         if (dateElement) {
             dateElement.textContent = new Date().toLocaleDateString('vi-VN');
@@ -105,36 +95,6 @@
             const isDark = bodyElement.classList.toggle('dark-mode');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             syncThemeIcons(isDark);
-        });
-
-        function closeMenu() {
-            if (!mainNav || !menuToggleBtn) return;
-            mainNav.classList.remove('active');
-            menuToggleBtn.setAttribute('aria-expanded', 'false');
-        }
-
-        function toggleMenu() {
-            if (!mainNav || !menuToggleBtn) return;
-            const isOpen = mainNav.classList.toggle('active');
-            menuToggleBtn.setAttribute('aria-expanded', String(isOpen));
-        }
-
-        if (menuToggleBtn) {
-            menuToggleBtn.addEventListener('click', toggleMenu);
-        }
-
-        navLinks.forEach((link) => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    closeMenu();
-                }
-            });
-        });
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                closeMenu();
-            }
         });
 
         function updateBackToTop() {
@@ -160,20 +120,24 @@
             });
         }
 
-        fetch('{{ "/search.json" | relative_url }}')
-            .then((response) => response.ok ? response.json() : [])
-            .then((data) => {
-                posts = Array.isArray(data) ? data : [];
-            })
-            .catch(() => {
-                posts = [];
-            });
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function hideResults() {
-            resultsContainer.style.display = 'none';
+            if (resultsContainer) {
+                resultsContainer.style.display = 'none';
+            }
         }
 
         function renderResults(query) {
+            if (!resultsContainer) return;
+
             const normalizedQuery = query.trim().toLowerCase();
             resultsContainer.innerHTML = '';
 
@@ -182,14 +146,24 @@
                 return;
             }
 
-            const filteredPosts = posts
-                .filter((post) => post.title && post.title.toLowerCase().includes(normalizedQuery))
-                .slice(0, 6);
+            if (!searchReady) {
+                resultsContainer.style.display = 'block';
+                resultsContainer.innerHTML = '<div class="no-results">Loading posts...</div>';
+                return;
+            }
+
+            const filteredPosts = posts.filter((post) => {
+                const haystack = [post.title, post.excerpt, post.content]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                return haystack.includes(normalizedQuery);
+            }).slice(0, 8);
 
             resultsContainer.style.display = 'block';
 
             if (!filteredPosts.length) {
-                resultsContainer.innerHTML = '<div class="no-results">No posts found.</div>';
+                resultsContainer.innerHTML = '<div class="no-results">No matching posts found.</div>';
                 return;
             }
 
@@ -197,12 +171,35 @@
                 const link = document.createElement('a');
                 link.href = post.url;
                 link.className = 'search-result-item';
-                link.innerHTML = `<span class="result-title">${post.title}</span><span class="result-date">${post.date || ''}</span>`;
+                link.innerHTML = `<span class="result-title">${escapeHtml(post.title)}</span><span class="result-date">${escapeHtml(post.date || '')}</span>`;
                 resultsContainer.appendChild(link);
             });
         }
 
+        fetch('{{ "/search.json" | relative_url }}')
+            .then((response) => response.ok ? response.json() : Promise.reject(new Error('Search index unavailable')))
+            .then((data) => {
+                posts = Array.isArray(data) ? data : [];
+                searchReady = true;
+                if (searchInput && searchInput.value.trim()) {
+                    renderResults(searchInput.value);
+                }
+            })
+            .catch(() => {
+                posts = [];
+                searchReady = true;
+                if (searchInput && searchInput.value.trim()) {
+                    renderResults(searchInput.value);
+                }
+            });
+
         if (searchInput) {
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value.trim()) {
+                    renderResults(searchInput.value);
+                }
+            });
+
             searchInput.addEventListener('input', (event) => {
                 renderResults(event.target.value);
             });
