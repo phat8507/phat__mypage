@@ -69,6 +69,8 @@
         const resultsContainer = document.getElementById('results-container');
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const THEME_FADE_DURATION = 2500;
+        const BLOG_INDEX_URL = '{{ "/blog/" | relative_url }}';
+        const SEARCH_INDEX_URL = '{{ "/search.json" | relative_url }}';
         let posts = [];
         let lastKnownScroll = 0;
         let isTicking = false;
@@ -151,6 +153,94 @@
             }
         }
 
+        function normalizePosts(items) {
+            if (!Array.isArray(items)) return [];
+
+            return items
+                .filter((item) => item && item.title && item.url)
+                .map((item) => ({
+                    title: String(item.title || '').trim(),
+                    url: String(item.url || '').trim(),
+                    date: String(item.date || '').trim(),
+                    excerpt: String(item.excerpt || '').trim(),
+                    content: String(item.content || '').trim()
+                }));
+        }
+
+        async function loadSearchJson() {
+            const response = await fetch(SEARCH_INDEX_URL, { headers: { 'Accept': 'application/json, text/plain, */*' } });
+            if (!response.ok) {
+                throw new Error('Search index unavailable');
+            }
+
+            const rawText = await response.text();
+            const trimmedText = rawText.trim();
+            const jsonStart = trimmedText.indexOf('[');
+            const jsonEnd = trimmedText.lastIndexOf(']');
+
+            if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+                throw new Error('Search index is malformed');
+            }
+
+            const parsed = JSON.parse(trimmedText.slice(jsonStart, jsonEnd + 1));
+            const normalized = normalizePosts(parsed);
+
+            if (!normalized.length) {
+                throw new Error('Search index is empty');
+            }
+
+            return normalized;
+        }
+
+        async function loadSearchFallback() {
+            const response = await fetch(BLOG_INDEX_URL, { headers: { 'Accept': 'text/html, */*' } });
+            if (!response.ok) {
+                throw new Error('Blog index unavailable');
+            }
+
+            const markup = await response.text();
+            const parser = new DOMParser();
+            const documentNode = parser.parseFromString(markup, 'text/html');
+            const cards = Array.from(documentNode.querySelectorAll('.blog-card'));
+            const fallbackPosts = cards.map((card) => {
+                const link = card.querySelector('h2 a');
+                const excerpt = card.querySelector('p');
+                const meta = card.querySelector('div');
+
+                return {
+                    title: link ? link.textContent.trim() : '',
+                    url: link ? link.getAttribute('href') : '',
+                    date: meta ? meta.textContent.trim() : '',
+                    excerpt: excerpt ? excerpt.textContent.trim() : '',
+                    content: excerpt ? excerpt.textContent.trim() : ''
+                };
+            });
+
+            const normalized = normalizePosts(fallbackPosts);
+            if (!normalized.length) {
+                throw new Error('Fallback search index is empty');
+            }
+
+            return normalized;
+        }
+
+        async function bootstrapSearch() {
+            try {
+                posts = await loadSearchJson();
+            } catch (searchIndexError) {
+                try {
+                    posts = await loadSearchFallback();
+                } catch (fallbackError) {
+                    posts = [];
+                }
+            } finally {
+                searchReady = true;
+                if (searchInput && searchInput.value.trim()) {
+                    renderResults(searchInput.value);
+                }
+            }
+        }
+
         function renderResults(query) {
             if (!resultsContainer) return;
 
@@ -192,22 +282,7 @@
             });
         }
 
-        fetch('{{ "/search.json" | relative_url }}')
-            .then((response) => response.ok ? response.json() : Promise.reject(new Error('Search index unavailable')))
-            .then((data) => {
-                posts = Array.isArray(data) ? data : [];
-                searchReady = true;
-                if (searchInput && searchInput.value.trim()) {
-                    renderResults(searchInput.value);
-                }
-            })
-            .catch(() => {
-                posts = [];
-                searchReady = true;
-                if (searchInput && searchInput.value.trim()) {
-                    renderResults(searchInput.value);
-                }
-            });
+        bootstrapSearch();
 
         if (searchInput) {
             searchInput.addEventListener('focus', () => {
