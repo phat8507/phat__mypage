@@ -8,25 +8,25 @@ header_style: short
     {% for post in paginator.posts %}
     <div class="blog-card">
         <h2><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h2>
-        <div style="font-size: 0.85rem; color:#888; margin-bottom:10px;">{{ post.date | date: "%b %d, %Y" }}</div>
-        
+        <div style="font-size: 0.88rem; color: var(--text-dim); margin-bottom: 12px; font-style: italic; opacity: 0.9;">{{ post.date | date: "%b %d, %Y" }}</div>
+
         <p>{{ post.excerpt | strip_html | truncatewords: 25 }}</p>
-        
+
         <a href="{{ post.url | relative_url }}" class="read-more">Read more →</a>
     </div>
     {% endfor %}
 </div>
 
 {% if paginator.total_pages > 1 %}
-<div style="text-align:center; margin-bottom:80px;">
+<div style="text-align: center; margin: 0 auto 80px; width: min(100%, 720px); display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; color: var(--text-dim);">
   {% if paginator.previous_page %}
-    <a href="{{ paginator.previous_page_path | relative_url }}" style="padding:8px 16px; border:1px solid black; margin:0 5px;">← Newer</a>
+    <a href="{{ paginator.previous_page_path | relative_url }}" style="padding: 10px 18px; border: 1px solid rgba(120, 101, 82, 0.18); border-radius: 999px; background: rgba(255,255,255,0.14); color: var(--text-color);">← Newer</a>
   {% endif %}
-  
-  <span style="font-style:italic; margin:0 10px;">Page {{ paginator.page }} of {{ paginator.total_pages }}</span>
+
+  <span style="font-style: italic; margin: 0 4px;">Page {{ paginator.page }} of {{ paginator.total_pages }}</span>
 
   {% if paginator.next_page %}
-    <a href="{{ paginator.next_page_path | relative_url }}" style="padding:8px 16px; border:1px solid black; margin:0 5px;">Older →</a>
+    <a href="{{ paginator.next_page_path | relative_url }}" style="padding: 10px 18px; border: 1px solid rgba(120, 101, 82, 0.18); border-radius: 999px; background: rgba(255,255,255,0.14); color: var(--text-color);">Older →</a>
   {% endif %}
 </div>
 {% endif %}
